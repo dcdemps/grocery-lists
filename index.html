@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GrocerSplit - Local Grocery Price Comparison</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col pb-20">
+
+    <!-- Header -->
+    <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="bg-white text-emerald-600 p-2 rounded-xl shadow-inner font-bold text-lg flex items-center justify-center w-9 h-9">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">GrocerSplit</h1>
+                    <div class="flex items-center text-xs text-emerald-100 space-x-1 cursor-pointer" onclick="openSettingsModal()">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span id="headerLocationDisplay">19380</span>
+                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openSettingsModal()" class="bg-emerald-700/60 hover:bg-emerald-700 p-2 rounded-xl text-sm transition">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-md w-full mx-auto px-4 py-4 mb-10">
+
+        <!-- TAB 1: GROCERY LIST -->
+        <div id="tabList" class="tab-content space-y-4">
+            <!-- Search & Quick Add Bar -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                <h2 class="font-semibold text-slate-700 text-sm flex items-center justify-between">
+                    <span>Add to Grocery List</span>
+                    <span id="itemCountBadge" class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">0 items</span>
+                </h2>
+                
+                <form id="addItemForm" onsubmit="handleAddItem(event)" class="flex gap-2">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </span>
+                        <input type="text" id="itemNameInput" placeholder="e.g. Milk, Eggs, Chicken breast..." autocomplete="off"
+                            class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    </div>
+                    <select id="itemCategorySelect" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Produce">Produce</option>
+                        <option value="Dairy">Dairy</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Bakery">Bakery</option>
+                        <option value="Pantry">Pantry</option>
+                        <option value="Beverages">Bevs</option>
+                        <option value="Frozen">Frozen</option>
+                        <option value="Household">Other</option>
+                    </select>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-sm">
+                        Add
+                    </button>
+                </form>
+
+                <!-- Quick Suggestions Chips -->
+                <div>
+                    <p class="text-[11px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Quick Suggestions:</p>
+                    <div class="flex flex-wrap gap-1.5" id="quickAddChips">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current List Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-slate-700 text-sm">Your Current Cart</h3>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="clearList()" class="text-xs text-rose-500 hover:text-rose-700 font-medium">Clear All</button>
+                    </div>
+                </div>
+
+                <div id="groceryListContainer" class="divide-y divide-slate-100 max-h-[380px] overflow-y-auto">
+                    <!-- Dynamic List Items -->
+                </div>
+            </div>
+
+            <!-- Action Button to Compare -->
+            <button onclick="switchToTab('compare')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 px-4 rounded-2xl shadow-md transition flex items-center justify-center space-x-2 text-sm">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Compare Prices Across Stores</span>
+            </button>
+        </div>
+
+        <!-- TAB 2: PRICE COMPARISON -->
+        <div id="tabCompare" class="tab-content hidden space-y-4">
+            
+            <!-- Controls Banner -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Store Price Comparison</h2>
+                        <p class="text-xs text-slate-500">Based on ZIP <span id="compareZipDisplay">19380</span> &enabled stores</p>
+                    </div>
+                    <button onclick="runPriceCheck()" id="refreshPricesBtn" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Scan Prices</span>
+                    </button>
+                </div>
+
+                <!-- Loyalty Toggle -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-700">Member / Loyalty Discounts</p>
+                            <p class="text-[10px] text-slate-400">Apply club card savings & digital coupons</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="loyaltyToggle" onchange="toggleLoyalty(this)" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div id="priceLoadingState" class="hidden py-12 text-center space-y-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div class="inline-block animate-spin text-emerald-600 text-2xl">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+                <p class="text-xs font-medium text-slate-600" id="loadingStatusText">Querying local store inventories & circulars...</p>
+            </div>
+
+            <!-- Split-Cart Recommendation Box -->
+            <div id="smartSplitCard" class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-md space-y-3 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Smart Split Recommendation
+                    </span>
+                    <span class="text-xs text-emerald-100" id="splitTotalSavings">Save $0.00</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" id="splitOptimalHeader">Lowest Total: $0.00</h3>
+                    <p class="text-xs text-emerald-100 mt-0.5">Split your shopping across stores to get the absolute lowest price.</p>
+                </div>
+                <div id="splitStoreBreakdownList" class="space-y-2 pt-1">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Store Cards Container -->
+            <div id="storeComparisonList" class="space-y-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- TAB 3: STORES MANAGER -->
+        <div id="tabStores" class="tab-content hidden space-y-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Preferred Grocery Stores</h2>
+                        <p class="text-xs text-slate-500">Toggle stores to include in price comparisons.</p>
+                    </div>
+                    <button onclick="openAddStoreModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Custom Store</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="storesManagerList" class="space-y-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 z-30 shadow-lg">
+        <div class="max-w-md mx-auto flex justify-around py-2">
+            <button onclick="switchToTab('list')" id="navBtnList" class="flex flex-col items-center py-1 px-4 text-emerald-600 transition">
+                <i class="fa-solid fa-list-check text-lg"></i>
+                <span class="text-[11px] font-medium mt-1">My List</span>
+            </button>
+            <button onclick="switchToTab('compare')" id="navBtnCompare" class="flex flex-col items-center py-1 px-4 text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-tags text-lg"></i>
+                <span class="text-[11px] font-medium mt-1">Compare</span>
+            </button>
+            <button onclick="switchToTab('stores')" id="navBtnStores" class="flex flex-col items-center py-1 px-4 text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-store text-lg"></i>
+                <span class="text-[11px] font-medium mt-1">Stores</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- SETTINGS & LOCATION MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base">Location & Settings</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Your ZIP Code</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-location-dot text-xs"></i>
+                        </span>
+                        <input type="text" id="modalZipInput" maxlength="5" placeholder="19380"
+                            class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Used to pinpoint local store inventory and pricing.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Search Radius (Miles)</label>
+                    <select id="modalRadiusSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="3">Within 3 miles</option>
+                        <option value="5" selected>Within 5 miles</option>
+                        <option value="10">Within 10 miles</option>
+                        <option value="20">Within 20 miles</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl shadow-md transition text-sm">
+                    Save Location Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD CUSTOM STORE MODAL -->
+    <div id="addStoreModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base">Add Local Grocery Store</h3>
+                <button onclick="closeAddStoreModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="addStoreForm" onsubmit="handleCustomStoreSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Store Name</label>
+                    <input type="text" id="customStoreName" required placeholder="e.g. Wegmans, Whole Foods"
+                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Distance (miles)</label>
+                    <input type="number" step="0.1" id="customStoreDistance" required placeholder="2.4"
+                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Price Tier Level</label>
+                    <select id="customStoreTier" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="budget">Budget (Like ALDI / Walmart)</option>
+                        <option value="mid" selected>Mid-Range (Like Giant / Acme / Kroger)</option>
+                        <option value="premium">Premium (Like Wegmans / Whole Foods)</option>
+                    </select>
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl shadow-md transition text-sm">
+                        Add Store
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Default State Data
+        let appState = {
+            zipCode: "19380",
+            radius: "5",
+            loyaltyActive: false,
+            items: [
+                { id: 1, name: "Whole Milk (1 Gal)", category: "Dairy", checked: false },
+                { id: 2, name: "Large Grade A Eggs (1 Dozen)", category: "Dairy", checked: false },
+                { id: 3, name: "Boneless Chicken Breast (1 lb)", category: "Meat", checked: false },
+                { id: 4, name: "Organic Baby Spinach", category: "Produce", checked: false },
+                { id: 5, name: "Sourdough Bread", category: "Bakery", checked: false }
+            ],
+            stores: [
+                { id: "walmart", name: "Walmart Supercenter", distance: "2.1 mi", tier: "budget", enabled: true, hasLoyalty: false },
+                { id: "aldi", name: "ALDI", distance: "3.4 mi", tier: "budget", enabled: true, hasLoyalty: false },
+                { id: "giant", name: "Giant Food Stores", distance: "1.2 mi", tier: "mid", enabled: true, hasLoyalty: true },
+                { id: "acme", name: "Acme Markets", distance: "2.8 mi", tier: "mid", enabled: true, hasLoyalty: true },
+                { id: "target", name: "Target Groceries", distance: "4.0 mi", tier: "mid", enabled: true, hasLoyalty: true },
+                { id: "kroger", name: "Kroger", distance: "5.5 mi", tier: "mid", enabled: false, hasLoyalty: true }
+            ]
+        };
+
+        const quickSuggestions = [
+            "Whole Milk", "Eggs", "Chicken Breast", "Spinach", "Bacon", 
+            "Bananas", "Avocados", "Ground Beef", "Cheddar Cheese", "Greek Yogurt",
+            "Sourdough Bread", "Pasta", "Olive Oil", "Coffee", "Apples"
+        ];
+
+        // Local Storage Sync
+        function loadFromStorage() {
+            const saved = localStorage.getItem('grocersplit_state_v2');
+            if (saved) {
+                try { appState = JSON.parse(saved); } catch (e) { console.error(e); }
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('grocersplit_state_v2', JSON.stringify(appState));
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            renderHeader();
+            renderGroceryList();
+            renderQuickChips();
+            renderStoresManager();
+        });
+
+        function renderHeader() {
+            document.getElementById('headerLocationDisplay').textContent = appState.zipCode;
+            document.getElementById('compareZipDisplay').textContent = appState.zipCode;
+            document.getElementById('modalZipInput').value = appState.zipCode;
+            document.getElementById('modalRadiusSelect').value = appState.radius;
+            document.getElementById('loyaltyToggle').checked = appState.loyaltyActive;
+        }
+
+        // Tab Switching
+        function switchToTab(tabName) {
+            ['list', 'compare', 'stores'].forEach(t => {
+                document.getElementById(`tab${capitalize(t)}`).classList.add('hidden');
+                document.getElementById(`navBtn${capitalize(t)}`).className = "flex flex-col items-center py-1 px-4 text-slate-400 hover:text-slate-600 transition";
+            });
+            document.getElementById(`tab${capitalize(tabName)}`).classList.remove('hidden');
+            document.getElementById(`navBtn${capitalize(tabName)}`).className = "flex flex-col items-center py-1 px-4 text-emerald-600 transition font-semibold";
+            
+            if (tabName === 'compare') {
+                runPriceCheck();
+            }
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Grocery List Logic
+        function renderGroceryList() {
+            const container = document.getElementById('groceryListContainer');
+            const badge = document.getElementById('itemCountBadge');
+            badge.textContent = `${appState.items.length} item${appState.items.length === 1 ? '' : 's'}`;
+
+            if (appState.items.length === 0) {
+                container.innerHTML = `
+                    <div class="py-10 text-center space-y-2">
+                        <i class="fa-solid fa-basket-shopping text-slate-300 text-3xl"></i>
+                        <p class="text-xs text-slate-400">Your grocery list is empty. Add items above or click suggestions!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appState.items.map(item => `
+                <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition group">
+                    <div class="flex items-center space-x-3 flex-1">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItemCheck(${item.id})"
+                            class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                        <span class="text-sm ${item.checked ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${escapeHtml(item.name)}</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">${item.category}</span>
+                        <button onclick="deleteItem(${item.id})" class="text-slate-300 hover:text-rose-500 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderQuickChips() {
+            const container = document.getElementById('quickAddChips');
+            container.innerHTML = quickSuggestions.map(s => `
+                <button type="button" onclick="quickAdd('${s}')" class="text-xs bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition font-medium">
+                    + ${s}
+                </button>
+            `).join('');
+        }
+
+        function handleAddItem(e) {
+            e.preventDefault();
+            const input = document.getElementById('itemNameInput');
+            const category = document.getElementById('itemCategorySelect').value;
+            const name = input.value.trim();
+            if (!name) return;
+
+            appState.items.push({ id: Date.now(), name, category, checked: false });
+            input.value = '';
+            saveToStorage();
+            renderGroceryList();
+        }
+
+        function quickAdd(name) {
+            // Determine category automatically
+            let cat = "Pantry";
+            if (["Milk", "Eggs", "Cheese", "Yogurt"].some(c => name.includes(c))) cat = "Dairy";
+            else if (["Chicken", "Beef", "Bacon"].some(c => name.includes(c))) cat = "Meat";
+            else if (["Spinach", "Bananas", "Avocados", "Apples"].some(c => name.includes(c))) cat = "Produce";
+            else if (["Bread"].some(c => name.includes(c))) cat = "Bakery";
+
+            appState.items.push({ id: Date.now() + Math.random(), name, category: cat, checked: false });
+            saveToStorage();
+            renderGroceryList();
+        }
+
+        function toggleItemCheck(id) {
+            const item = appState.items.find(i => i.id === id);
+            if (item) item.checked = !item.checked;
+            saveToStorage();
+            renderGroceryList();
+        }
+
+        function deleteItem(id) {
+            appState.items = appState.items.filter(i => i.id !== id);
+            saveToStorage();
+            renderGroceryList();
+        }
+
+        function clearList() {
+            if (confirm("Clear all items from your grocery list?")) {
+                appState.items = [];
+                saveToStorage();
+                renderGroceryList();
+            }
+        }
+
+        // Price Comparison Engine with Loyalty Simulation
+        function runPriceCheck() {
+            const loadingState = document.getElementById('priceLoadingState');
+            const storeList = document.getElementById('storeComparisonList');
+            const splitCard = document.getElementById('smartSplitCard');
+            
+            loadingState.classList.remove('hidden');
+            storeList.innerHTML = '';
+            splitCard.classList.add('hidden');
+
+            setTimeout(() => {
+                loadingState.classList.add('hidden');
+                calculateAndRenderComparison();
+            }, 700);
+        }
+
+        function toggleLoyalty(el) {
+            appState.loyaltyActive = el.checked;
+            saveToStorage();
+            runPriceCheck();
+        }
+
+        function calculateAndRenderComparison() {
+            const enabledStores = appState.stores.filter(s => s.enabled);
+            const activeItems = appState.items;
+            const storeList = document.getElementById('storeComparisonList');
+            const splitCard = document.getElementById('smartSplitCard');
+
+            if (enabledStores.length === 0) {
+                storeList.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl text-center space-y-2 border border-slate-100">
+                        <i class="fa-solid fa-store-slash text-slate-300 text-3xl"></i>
+                        <p class="text-xs font-semibold text-slate-700">No stores enabled</p>
+                        <p class="text-xs text-slate-400">Go to the Stores tab to enable at least one store for comparison.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (activeItems.length === 0) {
+                storeList.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl text-center space-y-2 border border-slate-100">
+                        <i class="fa-solid fa-basket-shopping text-slate-300 text-3xl"></i>
+                        <p class="text-xs font-semibold text-slate-700">Your list is empty</p>
+                        <p class="text-xs text-slate-400">Add some groceries in the "My List" tab to compare prices.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Price Generation & Calculation per Store
+            let storeResults = enabledStores.map(store => {
+                let baseMultiplier = store.tier === 'budget' ? 0.82 : (store.tier === 'mid' ? 1.0 : 1.25);
+                let itemBreakdown = activeItems.map(item => {
+                    // Seed pseudorandom price based on item name and store id
+                    let seed = (item.name + store.id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    let basePrice = 2.50 + ((seed % 750) / 100); // Between $2.50 and $10.00
+                    let standardPrice = parseFloat((basePrice * baseMultiplier).toFixed(2));
+                    
+                    let memberPrice = standardPrice;
+                    let hasDiscountApplied = false;
+                    
+                    if (appState.loyaltyActive && store.hasLoyalty) {
+                        let discountRate = 0.12; // ~12% club card / digital coupon discount
+                        memberPrice = parseFloat((standardPrice * (1 - discountRate)).toFixed(2));
+                        hasDiscountApplied = true;
+                    }
+
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        standardPrice,
+                        effectivePrice: memberPrice,
+                        hasDiscountApplied
+                    };
+                });
+
+                let standardTotal = itemBreakdown.reduce((sum, i) => sum + i.standardPrice, 0);
+                let effectiveTotal = itemBreakdown.reduce((sum, i) => sum + i.effectivePrice, 0);
+
+                return {
+                    ...store,
+                    items: itemBreakdown,
+                    standardTotal: parseFloat(standardTotal.toFixed(2)),
+                    effectiveTotal: parseFloat(effectiveTotal.toFixed(2))
+                };
+            });
+
+            // Sort stores by effective total
+            storeResults.sort((a, b) => a.effectiveTotal - b.effectiveTotal);
+            const cheapestStore = storeResults[0];
+            const mostExpensiveStore = storeResults[storeResults.length - 1];
+
+            // Calculate Split Cart (Find cheapest item across all enabled stores)
+            let splitItemMap = {};
+            activeItems.forEach(item => {
+                let bestForThisItem = null;
+                storeResults.forEach(store => {
+                    let stItem = store.items.find(i => i.id === item.id);
+                    if (!bestForThisItem || stItem.effectivePrice < bestForThisItem.price) {
+                        bestForThisItem = { storeName: store.name, storeId: store.id, price: stItem.effectivePrice };
+                    }
+                });
+                splitItemMap[item.id] = bestForThisItem;
+            });
+
+            let splitTotal = Object.values(splitItemMap).reduce((sum, curr) => sum + curr.price, 0);
+            splitTotal = parseFloat(splitTotal.toFixed(2));
+
+            // Render Split Cart Card if it saves money over the single cheapest store
+            if (splitTotal < cheapestStore.effectiveTotal && storeResults.length > 1) {
+                splitCard.classList.remove('hidden');
+                document.getElementById('splitOptimalHeader').textContent = `Split-Cart Total: $${splitTotal.toFixed(2)}`;
+                let savings = (cheapestStore.effectiveTotal - splitTotal).toFixed(2);
+                document.getElementById('splitTotalSavings').textContent = `Save $${savings} extra`;
+
+                // Group items by store for split cart
+                let storeBuckets = {};
+                Object.entries(splitItemMap).forEach(([itemId, data]) => {
+                    if (!storeBuckets[data.storeName]) storeBuckets[data.storeName] = [];
+                    let itemObj = activeItems.find(i => i.id == itemId);
+                    storeBuckets[data.storeName].push(itemObj.name);
+                });
+
+                document.getElementById('splitStoreBreakdownList').innerHTML = Object.entries(storeBuckets).map(([stName, itemsArr]) => `
+                    <div class="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 text-xs">
+                        <span class="font-bold text-white"><i class="fa-solid fa-store mr-1.5"></i>${stName}:</span>
+                        <span class="text-emerald-100">${itemsArr.join(', ')}</span>
+                    </div>
+                `).join('');
+            } else {
+                splitCard.classList.add('hidden');
+            }
+
+            // Render Store Cards
+            storeList.innerHTML = storeResults.map((store, index) => {
+                let isCheapest = index === 0;
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border ${isCheapest ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-100'} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-xl ${isCheapest ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-bold shadow-inner">
+                                    ${index + 1}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-1.5">
+                                        <span>${store.name}</span>
+                                        ${isCheapest ? '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Best Overall</span>' : ''}
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400">${store.distance} away • Tier: <span class="capitalize">${store.tier}</span></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-base font-extrabold text-slate-800">$${store.effectiveTotal.toFixed(2)}</span>
+                                ${appState.loyaltyActive && store.hasLoyalty && store.effectiveTotal < store.standardTotal ? `
+                                    <p class="text-[10px] text-emerald-600 font-medium">Saved $${(store.standardTotal - store.effectiveTotal).toFixed(2)} w/ club card</p>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Item Breakdown accordion toggle -->
+                        <div class="border-t border-slate-100 pt-2.5">
+                            <details class="group">
+                                <summary class="text-xs font-medium text-emerald-600 cursor-pointer flex items-center justify-between select-none">
+                                    <span>View itemized prices (${store.items.length} items)</span>
+                                    <i class="fa-solid fa-chevron-down text-[10px] group-open:rotate-180 transition"></i>
+                                </summary>
+                                <div class="mt-2 space-y-1.5 divide-y divide-slate-50">
+                                    ${store.items.map(i => `
+                                        <div class="pt-1.5 flex items-center justify-between text-xs">
+                                            <span class="text-slate-600">${i.name}</span>
+                                            <div class="text-right">
+                                                ${i.hasDiscountApplied ? `
+                                                    <span class="text-slate-400 line-through text-[10px] mr-1">$${i.standardPrice.toFixed(2)}</span>
+                                                    <span class="text-emerald-600 font-semibold">$${i.effectivePrice.toFixed(2)}</span>
+                                                ` : `
+                                                    <span class="text-slate-700 font-medium">$${i.standardPrice.toFixed(2)}</span>
+                                                `}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Stores Manager Tab
+        function renderStoresManager() {
+            const container = document.getElementById('storesManagerList');
+            container.innerHTML = appState.stores.map(store => `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-bold">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">${store.name}</h3>
+                            <p class="text-xs text-slate-400">${store.distance} • Tier: <span class="capitalize">${store.tier}</span> ${store.hasLoyalty ? '• Club Card Available' : ''}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${store.enabled ? 'checked' : ''} onchange="toggleStoreEnabled('${store.id}')" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleStoreEnabled(id) {
+            const store = appState.stores.find(s => s.id === id);
+            if (store) store.enabled = !store.enabled;
+            saveToStorage();
+            renderStoresManager();
+        }
+
+        // Modal Controls
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const zipInput = document.getElementById('modalZipInput').value.trim();
+            const radiusSelect = document.getElementById('modalRadiusSelect').value;
+            
+            if (zipInput.length === 5) {
+                appState.zipCode = zipInput;
+            }
+            appState.radius = radiusSelect;
+            saveToStorage();
+            renderHeader();
+            closeSettingsModal();
+        }
+
+        function openAddStoreModal() {
+            document.getElementById('addStoreModal').classList.remove('hidden');
+        }
+
+        function closeAddStoreModal() {
+            document.getElementById('addStoreModal').classList.add('hidden');
+        }
+
+        function handleCustomStoreSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('customStoreName').value.trim();
+            const distance = document.getElementById('customStoreDistance').value.trim() + " mi";
+            const tier = document.getElementById('customStoreTier').value;
+
+            if (!name) return;
+
+            appState.stores.push({
+                id: 'custom_' + Date.now(),
+                name,
+                distance,
+                tier,
+                enabled: true,
+                hasLoyalty: tier === 'mid'
+            });
+
+            saveToStorage();
+            renderStoresManager();
+            closeAddStoreModal();
+            document.getElementById('addStoreForm').reset();
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
