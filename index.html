@@ -34,12 +34,16 @@
                     </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="openAddStoreModal()" title="Add Store Nearby" class="bg-emerald-700/70 hover:bg-emerald-700 px-2.5 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
-                    <i class="fa-solid fa-plus"></i>
-                    <span class="hidden xs:inline">Store</span>
+            <div class="flex items-center space-x-1.5">
+                <button onclick="openBulkImportModal()" title="Bulk Paste or Upload List" class="bg-emerald-700/80 hover:bg-emerald-700 px-2.5 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>Import</span>
                 </button>
-                <button onclick="openSettingsModal()" title="Location Settings" class="bg-emerald-700/70 hover:bg-emerald-700 p-2 rounded-xl text-sm transition">
+                <button onclick="openAddStoreModal()" title="Add Store Nearby" class="bg-emerald-700/80 hover:bg-emerald-700 px-2.5 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Store</span>
+                </button>
+                <button onclick="openSettingsModal()" title="Location Settings" class="bg-emerald-700/80 hover:bg-emerald-700 p-2 rounded-xl text-sm transition">
                     <i class="fa-solid fa-sliders"></i>
                 </button>
             </div>
@@ -61,27 +65,31 @@
                         <span>Add Nearby Store</span>
                     </button>
                 </div>
-                <div id="quickStoreBarList" class="flex items-center space-x-2 overflow-x-auto hide-scrollbar py-1">
-                    <!-- Populated by JS -->
-                </div>
+                <div id="quickStoreBarList" class="flex items-center space-x-2 overflow-x-auto hide-scrollbar py-1"></div>
             </div>
 
-            <!-- Search & Quick Add Bar -->
+            <!-- Search, Quick Add & Bulk Import Trigger -->
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
-                <h2 class="font-semibold text-slate-700 text-sm flex items-center justify-between">
-                    <span>Add Items to Pull List</span>
-                    <span id="itemCountBadge" class="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
-                </h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-slate-700 text-sm">Add Items to Pull List</h2>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openBulkImportModal()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/60 px-2.5 py-1 rounded-lg font-semibold transition flex items-center space-x-1">
+                            <i class="fa-solid fa-paste text-[10px]"></i>
+                            <span>Bulk Paste / Upload</span>
+                        </button>
+                    </div>
+                </div>
                 
                 <form id="addItemForm" onsubmit="handleAddItem(event)" class="flex gap-2">
                     <div class="relative flex-1">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </span>
-                        <input type="text" id="itemNameInput" placeholder="e.g. Milk, Roma Tomatoes, Garlic..." autocomplete="off"
+                        <input type="text" id="itemNameInput" placeholder="e.g. Chicken Breast, Broccoli, Apples..." autocomplete="off"
                             class="w-full pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
                     </div>
                     <select id="itemCategorySelect" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-600 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Auto">Auto Dept</option>
                         <option value="Produce">Produce</option>
                         <option value="Dairy">Dairy</option>
                         <option value="Meat">Meat</option>
@@ -96,7 +104,7 @@
 
                 <!-- Quick Suggestions Chips -->
                 <div>
-                    <p class="text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Quick Add:</p>
+                    <p class="text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Quick Add Staples:</p>
                     <div class="flex flex-wrap gap-1.5" id="quickAddChips"></div>
                 </div>
             </div>
@@ -104,8 +112,21 @@
             <!-- Current List Card -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                    <h3 class="font-semibold text-slate-700 text-sm">Shopping List</h3>
-                    <button onclick="clearList()" class="text-xs text-rose-500 hover:text-rose-700 font-medium">Clear All</button>
+                    <div class="flex items-center space-x-2">
+                        <h3 class="font-semibold text-slate-700 text-sm">Shopping Pull List</h3>
+                        <span id="itemCountBadge" class="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">0</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="copyListToClipboard()" title="Copy list to clipboard" class="text-xs text-slate-500 hover:text-emerald-600 font-medium flex items-center space-x-1">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button onclick="exportListCSV()" title="Download CSV" class="text-xs text-slate-500 hover:text-emerald-600 font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-download"></i>
+                            <span>CSV</span>
+                        </button>
+                        <button onclick="clearList()" class="text-xs text-rose-500 hover:text-rose-700 font-medium">Clear</button>
+                    </div>
                 </div>
 
                 <div id="groceryListContainer" class="divide-y divide-slate-100 max-h-[340px] overflow-y-auto"></div>
@@ -135,9 +156,7 @@
                 </div>
 
                 <!-- Inline Store Toggle Pills -->
-                <div id="compareStoreBarList" class="flex items-center space-x-2 overflow-x-auto hide-scrollbar py-1">
-                    <!-- Populated by JS -->
-                </div>
+                <div id="compareStoreBarList" class="flex items-center space-x-2 overflow-x-auto hide-scrollbar py-1"></div>
 
                 <!-- Loyalty Toggle -->
                 <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between">
@@ -227,6 +246,69 @@
             </button>
         </div>
     </nav>
+
+    <!-- BULK PASTE / UPLOAD GROCERY LIST MODAL -->
+    <div id="bulkImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">Bulk Paste or Upload List</h3>
+                    <p class="text-[11px] text-slate-400">Paste from Notes/Meal Prep or upload a .txt / .csv file</p>
+                </div>
+                <button onclick="closeBulkImportModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- File Upload Dropzone -->
+            <div>
+                <label for="groceryFileInput" class="flex flex-col items-center justify-center w-full py-3.5 px-4 border-2 border-dashed border-emerald-200 rounded-2xl cursor-pointer bg-emerald-50/40 hover:bg-emerald-50 transition">
+                    <div class="flex items-center space-x-2 text-emerald-700 font-semibold text-xs">
+                        <i class="fa-solid fa-file-arrow-up text-sm"></i>
+                        <span>Upload .TXT or .CSV File</span>
+                    </div>
+                    <span id="uploadedFileName" class="text-[10px] text-slate-400 mt-0.5">Supports line-separated or comma-separated lists</span>
+                    <input id="groceryFileInput" type="file" accept=".txt,.csv,.tsv" class="hidden" onchange="handleFileUpload(event)" />
+                </label>
+            </div>
+
+            <!-- Textarea for Pasting -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-slate-600">Or Paste List Below (One item per line or comma-separated)</label>
+                    <button type="button" onclick="loadSamplePaste()" class="text-[11px] text-emerald-600 hover:underline font-medium">Load Sample</button>
+                </div>
+                <textarea id="bulkPasteTextarea" rows="6" placeholder="- 2 lbs Chicken Breast&#10;- Broccoli Crowns&#10;- Sliced Turkey Breast&#10;- Eggs&#10;- Tortillas&#10;- Roasted Garlic & Herb Seasoning"
+                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"></textarea>
+                <p class="text-[10px] text-slate-400">Bullets (-, *), checkboxes ([ ]), and department tags are cleaned and categorized automatically.</p>
+            </div>
+
+            <!-- Import Mode Radio -->
+            <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/70">
+                <span class="text-xs font-semibold text-slate-600">Import Mode:</span>
+                <div class="flex items-center space-x-3 text-xs">
+                    <label class="inline-flex items-center space-x-1 cursor-pointer">
+                        <input type="radio" name="importMode" value="append" checked class="text-emerald-600 focus:ring-emerald-500">
+                        <span class="font-medium text-slate-700">Add to current list</span>
+                    </label>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer">
+                        <input type="radio" name="importMode" value="replace" class="text-emerald-600 focus:ring-emerald-500">
+                        <span class="font-medium text-slate-700">Replace list</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                <button type="button" onclick="closeBulkImportModal()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-3 rounded-xl text-xs transition">
+                    Cancel
+                </button>
+                <button type="button" onclick="processBulkImport()" class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Parse & Add Items</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- SETTINGS & LOCATION MODAL -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
@@ -322,7 +404,7 @@
                 aisles: {
                     Dairy: "Aisle 18 • Dairy Wall, Bay 4, Shelf B",
                     Produce: "Produce Market • Front Right, Bay 2",
-                    Meat: "Butcher Counter • Rear Wall, Case 3",
+                    Meat: "Butcher & Deli • Rear Wall, Case 3",
                     Bakery: "Aisle 1 • Fresh Bakery, Table 2",
                     Pantry: "Aisle 7 • Bay 6, Shelf C (Eye Level)",
                     Frozen: "Aisle 14 • Freezer Door 8, Shelf B"
@@ -335,7 +417,7 @@
                 aisles: {
                     Dairy: "Aisle 12 • Back Right, Bay 8, Shelf A",
                     Produce: "Produce Dept • Front Left, Wet Rack 1",
-                    Meat: "Meat Dept • Back Wall, Bay 5",
+                    Meat: "Meat & Deli • Back Wall, Bay 5",
                     Bakery: "Front Left • Artisan Rack, Shelf 2",
                     Pantry: "Aisle 5 • Bay 3, Shelf D",
                     Frozen: "Aisle 10 • Door 12, Shelf C"
@@ -386,14 +468,20 @@
         const skuTemplates = {
             "whole milk": { suffix: "Vitamin D Whole Milk, 1 Gallon (128 fl oz)", basePrice: 3.89 },
             "eggs": { suffix: "Grade A Large White Eggs, 12 Count Carton", basePrice: 2.99 },
-            "roma tomatoes": { suffix: "Fresh Roma Plum Tomatoes, 1 lb Bag", basePrice: 2.49 },
-            "garlic": { suffix: "Fresh Whole White Garlic Bulb, 3 Count Net", basePrice: 1.99 },
-            "heavy cream": { suffix: "Heavy Whipping Cream, 16 fl oz Pint", basePrice: 3.49 },
-            "olive oil": { suffix: "100% Extra Virgin Olive Oil, 16.9 fl oz", basePrice: 7.99 },
             "chicken breast": { suffix: "Boneless Skinless Chicken Breast, Family Pack (~2.5 lb)", basePrice: 8.49 },
+            "turkey": { suffix: "Oven Roasted Deli Sliced Turkey Breast, 16 oz Tub", basePrice: 5.49 },
+            "ham": { suffix: "Honey Cured Sliced Deli Ham, 16 oz Pack", basePrice: 4.99 },
+            "roast beef": { suffix: "Top Round Thin Sliced Roast Beef, 12 oz", basePrice: 6.99 },
+            "broccoli": { suffix: "Fresh Broccoli Crowns, ~1.5 lb Bunch", basePrice: 2.69 },
+            "cauliflower": { suffix: "Fresh Whole White Cauliflower Head, 1 ct", basePrice: 2.99 },
+            "green beans": { suffix: "Trimmed Fresh Green Beans, 12 oz Steam Bag", basePrice: 2.49 },
+            "asparagus": { suffix: "Fresh Standard Asparagus Spears, 1 lb Bunch", basePrice: 3.49 },
+            "apples": { suffix: "Crisp Honeycrisp / Gala Apples, 3 lb Tote Bag", basePrice: 4.99 },
+            "tortillas": { suffix: "Soft Taco Size Flour Tortillas, 10 Count Pack", basePrice: 2.79 },
+            "shredded cheese": { suffix: "Sharp Cheddar Finely Shredded Cheese, 8 oz Bag", basePrice: 2.89 },
+            "garlic": { suffix: "Fresh Whole White Garlic Bulb, 3 Count Net", basePrice: 1.99 },
+            "olive oil": { suffix: "100% Extra Virgin Olive Oil, 16.9 fl oz", basePrice: 7.99 },
             "sourdough bread": { suffix: "Artisan Sliced Sourdough Boule, 16 oz Loaf", basePrice: 4.29 },
-            "pasta": { suffix: "Bronze Die Cut Rigatoni Pasta, 16 oz Box", basePrice: 1.79 },
-            "spinach": { suffix: "Triple Washed Baby Spinach Clamshell, 5 oz", basePrice: 2.99 },
             "butter": { suffix: "Sweet Cream Salted Butter Quarters, 16 oz (4 Sticks)", basePrice: 4.19 }
         };
 
@@ -405,16 +493,16 @@
         ];
 
         const quickSuggestions = [
-            { name: "Roma Tomatoes", cat: "Produce" },
-            { name: "Whole Garlic", cat: "Produce" },
-            { name: "Heavy Cream", cat: "Dairy" },
-            { name: "Olive Oil", cat: "Pantry" },
-            { name: "Pasta", cat: "Pantry" },
-            { name: "Whole Milk", cat: "Dairy" },
-            { name: "Eggs", cat: "Dairy" },
             { name: "Chicken Breast", cat: "Meat" },
-            { name: "Sourdough Bread", cat: "Bakery" },
-            { name: "Butter", cat: "Dairy" }
+            { name: "Sliced Turkey", cat: "Meat" },
+            { name: "Eggs", cat: "Dairy" },
+            { name: "Broccoli", cat: "Produce" },
+            { name: "Green Beans", cat: "Produce" },
+            { name: "Cauliflower", cat: "Produce" },
+            { name: "Apples", cat: "Produce" },
+            { name: "Tortillas", cat: "Bakery" },
+            { name: "Shredded Cheese", cat: "Dairy" },
+            { name: "Whole Garlic", cat: "Produce" }
         ];
 
         let appState = {
@@ -422,11 +510,11 @@
             radius: "5",
             loyaltyActive: true,
             items: [
-                { id: 1, name: "Roma Tomatoes", category: "Produce", checked: false },
-                { id: 2, name: "Whole Garlic", category: "Produce", checked: false },
-                { id: 3, name: "Heavy Cream", category: "Dairy", checked: false },
-                { id: 4, name: "Olive Oil", category: "Pantry", checked: false },
-                { id: 5, name: "Pasta", category: "Pantry", checked: false }
+                { id: 1, name: "Chicken Breast", category: "Meat", checked: false },
+                { id: 2, name: "Eggs", category: "Dairy", checked: false },
+                { id: 3, name: "Broccoli", category: "Produce", checked: false },
+                { id: 4, name: "Apples", category: "Produce", checked: false },
+                { id: 5, name: "Tortillas", category: "Bakery", checked: false }
             ],
             stores: [
                 { id: "giant", name: "Giant Food Stores", distance: "1.2 mi", tier: "mid", enabled: true, hasLoyalty: true, brand: "Giant Brand", searchUrl: "https://giantfoodstores.com/product-search/" },
@@ -438,14 +526,14 @@
         };
 
         function loadFromStorage() {
-            const saved = localStorage.getItem('grocersplit_state_v3');
+            const saved = localStorage.getItem('grocersplit_state_v4');
             if (saved) {
                 try { appState = JSON.parse(saved); } catch (e) { console.error(e); }
             }
         }
 
         function saveToStorage() {
-            localStorage.setItem('grocersplit_state_v3', JSON.stringify(appState));
+            localStorage.setItem('grocersplit_state_v4', JSON.stringify(appState));
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -471,7 +559,17 @@
             document.getElementById('loyaltyToggle').checked = appState.loyaltyActive;
         }
 
-        // Render Inline Store Toggle Pills on both List and Compare tabs
+        // Auto-detect grocery department from item name
+        function inferCategory(rawName) {
+            const lower = rawName.toLowerCase();
+            if (/(chicken|turkey|ham|beef|steak|pork|bacon|sausage|deli|meat|sirloin|roast)/.test(lower)) return "Meat";
+            if (/(milk|egg|cheese|butter|yogurt|cream|cheddar|mozzarella|provolone|sour cream)/.test(lower)) return "Dairy";
+            if (/(apple|broccoli|cauliflower|bean|asparagus|garlic|onion|potato|spinach|lettuce|tomato|banana|avocado|pepper|produce|herb|parsley|rosemary|thyme)/.test(lower)) return "Produce";
+            if (/(bread|tortilla|bagel|roll|bun|muffin|croissant|wrap|pita|sourdough|bakery)/.test(lower)) return "Bakery";
+            if (/(frozen|ice cream|pizza|waffle|fries|tots)/.test(lower)) return "Frozen";
+            return "Pantry";
+        }
+
         function renderQuickStoreBars() {
             const html = appState.stores.map(store => `
                 <button type="button" onclick="toggleStoreEnabled('${store.id}')"
@@ -506,7 +604,6 @@
             return str.charAt(0).toUpperCase() + str.slice(1);
         }
 
-        // Resolve exact real-world product name, link, and Aisle/Bay/Shelf location
         function resolveStoreProductDetails(item, store) {
             const meta = storeCatalogMeta[store.id] || {
                 brand: store.brand || store.name.split(' ')[0],
@@ -536,10 +633,8 @@
                 ? `${brandPrefix} ${matchedTemplate.suffix}`
                 : `${brandPrefix} ${item.name} (Standard Retail Pack)`;
 
-            // Calculate deterministic shelf tag / bay variance per item
             const seed = (item.name + store.id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
             let aisleLocation = meta.aisles[item.category] || `Aisle ${(seed % 14) + 2} • Bay ${(seed % 8) + 1}, Shelf ${['A','B','C','D'][seed % 4]}`;
-
             const directLink = `${meta.searchUrl}${encodeURIComponent(item.name)}`;
 
             return {
@@ -553,13 +648,13 @@
         function renderGroceryList() {
             const container = document.getElementById('groceryListContainer');
             const badge = document.getElementById('itemCountBadge');
-            badge.textContent = `${appState.items.length} item${appState.items.length === 1 ? '' : 's'}`;
+            badge.textContent = appState.items.length;
 
             if (appState.items.length === 0) {
                 container.innerHTML = `
                     <div class="py-10 text-center space-y-2">
                         <i class="fa-solid fa-basket-shopping text-slate-300 text-3xl"></i>
-                        <p class="text-xs text-slate-400">Your pull list is empty. Add items above!</p>
+                        <p class="text-xs text-slate-400">Your pull list is empty. Add items above or use Bulk Paste/Upload!</p>
                     </div>
                 `;
                 return;
@@ -594,10 +689,11 @@
         function handleAddItem(e) {
             e.preventDefault();
             const input = document.getElementById('itemNameInput');
-            const category = document.getElementById('itemCategorySelect').value;
+            const selectedCat = document.getElementById('itemCategorySelect').value;
             const name = input.value.trim();
             if (!name) return;
 
+            const category = selectedCat === "Auto" ? inferCategory(name) : selectedCat;
             appState.items.push({ id: Date.now(), name, category, checked: false });
             input.value = '';
             saveToStorage();
@@ -608,6 +704,132 @@
             appState.items.push({ id: Date.now() + Math.floor(Math.random() * 1000), name, category, checked: false });
             saveToStorage();
             renderGroceryList();
+        }
+
+        // BULK IMPORT / UPLOAD PARSER LOGIC
+        function openBulkImportModal() {
+            document.getElementById('bulkImportModal').classList.remove('hidden');
+        }
+
+        function closeBulkImportModal() {
+            document.getElementById('bulkImportModal').classList.add('hidden');
+        }
+
+        function loadSamplePaste() {
+            document.getElementById('bulkPasteTextarea').value = 
+`- 2 lbs Chicken Breast
+- Oven Roasted Sliced Turkey
+- 1 dozen Large Eggs
+- Broccoli Crowns
+- Fresh Green Beans
+- Cauliflower
+- Honeycrisp Apples
+- Flour Tortillas
+- Shredded Sharp Cheddar
+- Whole Garlic`;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('uploadedFileName').textContent = `Loaded: ${file.name}`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById('bulkPasteTextarea').value = content;
+            };
+            reader.readAsText(file);
+        }
+
+        function processBulkImport() {
+            const rawText = document.getElementById('bulkPasteTextarea').value.trim();
+            if (!rawText) {
+                alert("Please paste a grocery list or upload a file first.");
+                return;
+            }
+
+            const mode = document.querySelector('input[name="importMode"]:checked').value;
+
+            // Split by newlines first; if only 1 line and has commas, split by commas
+            let lines = rawText.split(/\r?\n/);
+            if (lines.length === 1 && rawText.includes(',')) {
+                lines = rawText.split(',');
+            }
+
+            const parsedItems = [];
+            lines.forEach((line, idx) => {
+                // Clean bullets, checkboxes, numbering, CSV quotes
+                let cleaned = line
+                    .replace(/^[\s\-\*\•\+\>\d\.\)\[\]xX✓✔]+/, '')
+                    .replace(/^["']|["']$/g, '')
+                    .trim();
+
+                if (!cleaned || cleaned.toLowerCase() === 'item' || cleaned.toLowerCase() === 'name,category') return;
+
+                let itemName = cleaned;
+                let itemCat = null;
+
+                // Support CSV rows like "Broccoli, Produce"
+                if (cleaned.includes(',')) {
+                    const parts = cleaned.split(',').map(s => s.trim());
+                    itemName = parts[0];
+                    const possibleCat = capitalize(parts[1].toLowerCase());
+                    if (["Produce", "Dairy", "Meat", "Bakery", "Pantry", "Frozen"].includes(possibleCat)) {
+                        itemCat = possibleCat;
+                    }
+                }
+
+                if (itemName) {
+                    parsedItems.push({
+                        id: Date.now() + idx + Math.floor(Math.random() * 10000),
+                        name: itemName,
+                        category: itemCat || inferCategory(itemName),
+                        checked: false
+                    });
+                }
+            });
+
+            if (parsedItems.length === 0) {
+                alert("No valid grocery items found to import.");
+                return;
+            }
+
+            if (mode === 'replace') {
+                appState.items = parsedItems;
+            } else {
+                appState.items = [...appState.items, ...parsedItems];
+            }
+
+            saveToStorage();
+            renderGroceryList();
+            document.getElementById('bulkPasteTextarea').value = '';
+            document.getElementById('uploadedFileName').textContent = 'Supports line-separated or comma-separated lists';
+            closeBulkImportModal();
+        }
+
+        // Export & Copy Helpers
+        function copyListToClipboard() {
+            if (appState.items.length === 0) return;
+            const text = appState.items.map(i => `- ${i.name} (${i.category})`).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Pull list copied to clipboard!");
+            });
+        }
+
+        function exportListCSV() {
+            if (appState.items.length === 0) return;
+            const csvRows = ["Item,Category,Checked"];
+            appState.items.forEach(i => {
+                csvRows.push(`"${i.name.replace(/"/g, '""')}",${i.category},${i.checked}`);
+            });
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `grocery_pull_list_${appState.zipCode}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function toggleItemCheck(id) {
@@ -643,7 +865,7 @@
             setTimeout(() => {
                 loadingState.classList.add('hidden');
                 calculateAndRenderComparison();
-            }, 350);
+            }, 300);
         }
 
         function toggleLoyalty(el) {
@@ -674,7 +896,7 @@
                     <div class="bg-white p-8 rounded-2xl text-center space-y-2 border border-slate-100">
                         <i class="fa-solid fa-basket-shopping text-slate-300 text-3xl"></i>
                         <p class="text-xs font-semibold text-slate-700">Your pull list is empty</p>
-                        <p class="text-xs text-slate-400">Add groceries in the "Pull List" tab first.</p>
+                        <p class="text-xs text-slate-400">Add or bulk-paste groceries in the "Pull List" tab first.</p>
                     </div>
                 `;
                 return;
@@ -686,7 +908,7 @@
                 let itemBreakdown = activeItems.map(item => {
                     const details = resolveStoreProductDetails(item, store);
                     const seed = (item.name + store.id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    const storeVariance = ((seed % 18) - 9) / 100; // -0.09 to +0.08 local variance
+                    const storeVariance = ((seed % 18) - 9) / 100;
                     
                     let standardPrice = Math.max(0.99, parseFloat(((details.baseTemplatePrice * tierMultiplier) + storeVariance).toFixed(2)));
                     let memberPrice = standardPrice;
@@ -769,7 +991,7 @@
                                             <span>${escapeHtml(m.fullProductName)}</span>
                                             <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-400"></i>
                                         </a>
-                                        <p class="text-[10px] text-amber-300 font-medium"><i class="fa-solid fa-Signs-post mr-1"></i>${escapeHtml(m.aisleLocation)}</p>
+                                        <p class="text-[10px] text-amber-300 font-medium"><i class="fa-solid fa-signs-post mr-1"></i>${escapeHtml(m.aisleLocation)}</p>
                                     </div>
                                     <span class="font-bold text-emerald-300 shrink-0">$${m.effectivePrice.toFixed(2)}</span>
                                 </div>
@@ -781,7 +1003,6 @@
                 splitCard.classList.add('hidden');
             }
 
-            // Render Individual Store Cards with Exact Item Name, Link & Aisle Location
             storeList.innerHTML = storeResults.map((store, index) => {
                 const isCheapest = index === 0;
                 return `
@@ -807,7 +1028,6 @@
                             </div>
                         </div>
 
-                        <!-- Itemized SKU & Aisle Breakdown (Open by default on #1 store) -->
                         <div class="border-t border-slate-100 pt-2.5">
                             <details class="group" ${isCheapest ? 'open' : ''}>
                                 <summary class="text-xs font-semibold text-emerald-600 cursor-pointer flex items-center justify-between select-none py-1">
@@ -818,7 +1038,7 @@
                                     ${store.items.map(i => `
                                         <div class="pt-2.5 flex items-start justify-between gap-3">
                                             <div class="space-y-1 flex-1">
-                                                <div class="flex items-center gap-1.5">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
                                                     <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(i.genericName)}</span>
                                                     <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md">
                                                         <i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(i.aisleLocation)}
@@ -847,7 +1067,6 @@
             }).join('');
         }
 
-        // Stores Manager Tab & Quick-Add Regional Presets
         function renderNearbyPresets() {
             const container = document.getElementById('nearbyChainPresets');
             const existingIds = new Set(appState.stores.map(s => s.id));
